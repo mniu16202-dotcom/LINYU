@@ -3,18 +3,23 @@ import XCTest
 
 final class FormattingTests: XCTestCase {
 
-    // MARK: - 金额（单位：分）
+    // MARK: - 金额（单位：厘）
 
-    func testMoneyFromCents() {
-        XCTAssertEqual(MoneyFormat.yuanString(fromCents: 0), "0.00")
-        XCTAssertEqual(MoneyFormat.yuanString(fromCents: 5), "0.05")
-        XCTAssertEqual(MoneyFormat.yuanString(fromCents: 990), "9.90")
-        XCTAssertEqual(MoneyFormat.yuanString(fromCents: 1234), "12.34")
-        XCTAssertEqual(MoneyFormat.yuanString(fromCents: 100), "1.00")
+    func testMilliToYuan() {
+        XCTAssertEqual(MilliMoney.yuan(fromMilli: 40), 0.04, accuracy: 0.0001)
+        XCTAssertEqual(MilliMoney.yuan(fromMilli: 1000), 1.0, accuracy: 0.0001)
+        XCTAssertEqual(MilliMoney.yuan(fromMilli: 0), 0, accuracy: 0.0001)
     }
 
-    func testMoneyNegative() {
-        XCTAssertEqual(MoneyFormat.yuanString(fromCents: -250), "-2.50")
+    /// 与安卓 `MoneyFormat.format` 一致：3 位小数，末位 0 收敛成 2 位
+    func testMoneyFormatting() {
+        XCTAssertEqual(MilliMoney.formatted(0.025), "0.025")
+        XCTAssertEqual(MilliMoney.formatted(0.04), "0.04")
+        XCTAssertEqual(MilliMoney.formatted(0.4), "0.40")
+        XCTAssertEqual(MilliMoney.formatted(5.0), "5.00")
+        XCTAssertEqual(MilliMoney.formatted(10.15), "10.15")
+        XCTAssertEqual(MilliMoney.formatted(0), "0.00")
+        XCTAssertEqual(MilliMoney.withSymbol(0.025), "¥0.025")
     }
 
     // MARK: - 时间

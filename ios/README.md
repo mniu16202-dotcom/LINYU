@@ -76,7 +76,7 @@ swift test
 ## 三条别踩的坑
 
 1. **成功不是 `state == 0`**：订单成功是 `state == 1 && result == 0`；HTTP 200 也不代表成功。
-2. **`consumeMoney` 单位是分**，显示前除 100。
+2. **金额单位是"厘"不是"分"**：`consumeOrder/result/query` 的 `consumeMoney` 数字要 ÷1000；账单列表里同名的是字符串、单位元。安卓 `MoneyFormat.milliToYuan` 是权威参照。
 3. **`downRate` 发出去 ≠ 开阀成功**，必须由 `downRateResult` 确认；确认超时是"结果未知"，不能当失败（否则可能重复计费）。
 
 另外：`306` 表示设备不在线。云端通道上出现它，通常说明这台其实是**蓝牙表**——

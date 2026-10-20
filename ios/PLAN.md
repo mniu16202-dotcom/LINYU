@@ -79,7 +79,7 @@ Config-Keys: module_list,advertise_type,question_list,service_phone_list,banner_
 ### 4.3 判读规则（最容易写错的部分）
 
 - **成功不是 `state == 0`**：订单成功语义是 `state == 1 && result == 0`；HTTP 200 不代表成功，必须看 `errorCode`。
-- `consumeMoney` 单位是**分**，显示前除 100。
+- `consumeMoney`（`/order/consumeOrder/result/query`，数字）单位是**厘**，除以 1000；而账单列表里**同名**字段是字符串、单位是元。同名不同单位，算错是静默错 1000 倍。`/device/info/mac` 的 `withholdMoney` 是元。
 - `consumeDate` 是 `yyyyMMddHHmmss`（下单时刻，非结算时刻）。
 - 错误码语义：`306` = 设备不在线（**本项目一旦出现即为方案级问题**）、`307` = 已有订单/正在关闭、`170` = 签名错、`226` = 加密校验失败、`4004` = 缺参数/查不到。
 - `downRate` 发出去后**不代表开阀成功**，必须由 `downRateResult` 确认；确认超时属"结果未知"，不能当失败处理（否则用户可能被重复计费）。

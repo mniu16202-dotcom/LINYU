@@ -30,14 +30,16 @@ struct DeviceInfo: Decodable, Equatable {
     var kind: DeviceKind {
         DeviceKind.resolve(
             deviceName: rawName,
-            bigTypeId: bigTypeId?.value.flatMap { Int($0) },
+            // 注意：`bigTypeId?.value.flatMap { … }` 会被解析成 String 的 Sequence.flatMap，
+            // 必须在 Optional 上 flatMap。
+            bigTypeId: bigTypeId.flatMap { Int($0.value) },
             bigTypeName: bigTypeName
         )
     }
 
-    /// 预扣金额，单位是**元**（不是分，别套 `MoneyFormat`）
+    /// 预扣金额，单位是**元**（不是分、也不是厘，别套 `MilliMoney.yuan(fromMilli:)`）
     var withholdMoneyText: String {
-        String(format: "¥%.2f", withholdMoney?.value ?? 0)
+        MilliMoney.withSymbol(withholdMoney?.value ?? 0)
     }
 
     /// 服务端明确标记的蓝牙表。当前多数学校不下发这个字段，取不到就当 false。
