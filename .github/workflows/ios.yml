@@ -1,0 +1,73 @@
+name: iOS CI
+
+# 只跑 iOS 相关改动；安卓那边的 ci.yml 不受影响。
+on:
+  push:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-tests:
+    name: Core 单测（SwiftPM）
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 打印工具链
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: swift test
+        working-directory: ios/LinYuCore
+        run: swift test --parallel
+
+  build:
+    name: 编译（模拟器，免签名）
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 XcodeGen
+        run: brew install xcodegen
+
+      - name: 生成工程
+        working-directory: ios
+        run: |
+          xcodegen --version
+          xcodegen generate
+          xcodebuild -list -project LinYu.xcodeproj
+
+      - name: 编译
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project LinYu.xcodeproj \
+            -scheme LinYu \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: 失败时上传日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-log
+          path: ios/build/Logs
+          if-no-files-found: ignore
