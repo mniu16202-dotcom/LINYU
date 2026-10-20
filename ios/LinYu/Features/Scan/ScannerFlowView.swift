@@ -21,7 +21,12 @@ struct ScannerFlowView: View {
                 }
             }
             .navigationDestination(for: String.self) { code in
-                DeviceDetailView(code: code)
+                DeviceDetailView(code: code) {
+                    // 开阀成功后要露出"使用中"页面，所以先关掉整个扫码 sheet。
+                    // 注意：这里必须是 ScannerFlowView 自己的 dismiss，
+                    // 页面内 dismiss 只会退出导航栈。
+                    dismiss()
+                }
             }
         }
     }

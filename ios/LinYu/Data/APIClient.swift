@@ -90,6 +90,24 @@ final class APIClient {
         try Self.requireSuccess(envelope)
     }
 
+    /// 允许 `data` 为 `null` 的 POST。
+    ///
+    /// `/order/tcpDevice/query/downRateResult` 在"还没开好"时返回
+    /// `errorCode:1 / data:null`，这是**要继续轮询**的信号，不是失败。
+    func postOptional<Payload: Decodable>(
+        _ path: String,
+        params: [String: String] = [:],
+        includeAuth: Bool = true
+    ) async throws -> Payload? {
+        let envelope: APIEnvelope<Payload> = try await send(
+            path: path, method: "POST", params: params, includeAuth: includeAuth
+        )
+        if envelope.success == false, let code = envelope.errorCode, code != 0 {
+            throw ServerError(code: code, message: envelope.errorMessage ?? "请求失败")
+        }
+        return envelope.data
+    }
+
     // MARK: - 内部
 
     private func send<Payload: Decodable>(

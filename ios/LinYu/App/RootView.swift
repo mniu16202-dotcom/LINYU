@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// 顶层路由：只有"已登录 / 未登录"两种状态，不引入导航库。
+/// 顶层路由：未登录 → 登录；使用中 → 使用页；否则 → 主页。
+///
+/// 不用 sheet 做"使用中"，因为它是主界面而不是浮层——这也和安卓的交互一致。
 struct RootView: View {
 
     @EnvironmentObject private var session: AppSession
@@ -9,11 +11,14 @@ struct RootView: View {
         Group {
             if session.auth == nil {
                 LoginView()
+            } else if session.active != nil {
+                ShowerView()
             } else {
                 HomeView()
             }
         }
         .animation(.default, value: session.auth)
+        .animation(.default, value: session.active == nil)
     }
 }
 

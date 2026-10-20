@@ -1,21 +1,27 @@
 import LinYuCore
 import SwiftUI
 
-/// 设备详情：按设备码查台账并展示。
-///
-/// M2 的验收点就是这一页——能扫到码、能查到设备、字段与服务端一致。
-/// 开阀按钮留到 M3 接。
+/// 设备详情：按设备码查台账并展示，然后下发费率（开阀）。
 struct DeviceDetailView: View {
 
     let code: String
+    /// 开阀成功后由上层关闭扫码 sheet，让"使用中"页面露出来
+    let onShowerStarted: () -> Void
 
     @EnvironmentObject private var session: AppSession
     @State private var phase: Phase = .loading
+    @State private var isStarting = false
+    @State private var startError: String?
 
     enum Phase {
         case loading
         case failed(String)
         case loaded(DeviceInfo)
+    }
+
+    init(code: String, onShowerStarted: @escaping () -> Void) {
+        self.code = code
+        self.onShowerStarted = onShowerStarted
     }
 
     var body: some View {
@@ -75,14 +81,27 @@ struct DeviceDetailView: View {
             }
 
             Button {
-                // M3：下发费率
+                Task { await start(device) }
             } label: {
-                Text("\(device.kind.startActionTitle)（M3 接入）")
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
+                if isStarting {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                } else {
+                    Text(device.kind.startActionTitle)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(true)
+            .disabled(isStarting)
+
+            if let startError {
+                Text(startError)
+                    .font(.footnote)
+                    .foregroundStyle(Color.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Text("设备码 \(code)")
                 .font(.caption2)
@@ -94,7 +113,7 @@ struct DeviceDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             Label("查询失败", systemImage: "exclamationmark.triangle.fill")
                 .font(.headline)
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.orange)
             Text(message)
                 .font(.callout)
             Text("设备码 \(code)")
@@ -132,5 +151,23 @@ struct DeviceDetailView: View {
         } catch {
             phase = .failed(error.localizedDescription)
         }
+    }
+
+    private func start(_ device: DeviceInfo) async {
+        isStarting = true
+        startError = nil
+        do {
+            try await session.beginShower(device: device, code: code)
+            onShowerStarted()
+        } catch let error as ServerError {
+            if error.isDeviceOffline {
+                startError = "设备不在线（306）：云端下发到不了这台设备。它很可能是不联网的蓝牙表，而当前 iOS 版本只实现了云端通道。"
+            } else {
+                startError = error.displayMessage
+            }
+        } catch {
+            startError = error.localizedDescription
+        }
+        isStarting = false
     }
 }
