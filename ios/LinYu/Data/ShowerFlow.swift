@@ -48,8 +48,9 @@ enum ShowerFlow {
 
         // 确认超时：结果**未知**，不是失败。费率可能已经下到设备上、水已经在流，
         // 所以先去问服务端"这台设备有没有进行中的订单"，拿到订单号就还能关阀结算。
+        // 注意：`try?` 会把 `UsingResult?` 拍平成单层 Optional，所以 `using` 解开后是非可选的。
         if let using = try? await api.queryUsing(snCode: snCode),
-           let orderNo = using?.orderNumber {
+           let orderNo = using.orderNumber {
             return Opened(orderNo: orderNo, startedAt: Date(), preDeductYuan: 0, confirmed: false)
         }
 
@@ -70,7 +71,7 @@ enum ShowerFlow {
 
         var amountYuan = 0.0
         if let consume = try? await api.consumeResult(snCode: snCode, orderNo: orderNo) {
-            amountYuan = consume?.consumeYuan ?? 0
+            amountYuan = consume.consumeYuan
         }
         let seconds = max(0, Int(Date().timeIntervalSince(startedAt)))
         return Settled(amountYuan: amountYuan, seconds: seconds, closed: closed)

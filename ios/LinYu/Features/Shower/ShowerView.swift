@@ -100,7 +100,7 @@ struct ShowerView: View {
 
             Text("本次消费 \(MilliMoney.withSymbol(amount))")
                 .font(.title2)
-            Text("用时 \(ServerClock.durationText(seconds: seconds))")
+            Text("用时 \(ServerClock.durationText(seconds: TimeInterval(seconds)))")
                 .foregroundStyle(.secondary)
 
             if !closed {
