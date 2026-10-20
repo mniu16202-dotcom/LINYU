@@ -60,6 +60,34 @@ struct LossyString: Decodable, Equatable {
     }
 }
 
+/// 既可能是数字也可能是字符串的浮点字段（例如 `withholdMoney`）。
+struct LossyDouble: Decodable, Equatable {
+    let value: Double
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let double = try? container.decode(Double.self) {
+            value = double
+            return
+        }
+        if let integer = try? container.decode(Int64.self) {
+            value = Double(integer)
+            return
+        }
+        if let string = try? container.decode(String.self), let double = Double(string) {
+            value = double
+            return
+        }
+        throw DecodingError.typeMismatch(
+            Double.self,
+            DecodingError.Context(
+                codingPath: decoder.codingPath,
+                debugDescription: "既不是数字也不是可解析的字符串"
+            )
+        )
+    }
+}
+
 /// `/user/registerAndLogin` 的响应。
 struct LoginResult: Decodable {
     let loginCode: String

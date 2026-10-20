@@ -61,6 +61,24 @@ final class APIClient {
         try Self.requireSuccess(envelope)
     }
 
+    /// 允许 `data` 为 `null` 的 GET。
+    ///
+    /// `/device/info/mac` 查不到设备时返回的是 `success:true, data:null`——
+    /// 这不是错误，而是"这个候选 MAC 没命中"，调用方要继续试下一个候选。
+    func getOptional<Payload: Decodable>(
+        _ path: String,
+        params: [String: String] = [:],
+        includeAuth: Bool = true
+    ) async throws -> Payload? {
+        let envelope: APIEnvelope<Payload> = try await send(
+            path: path, method: "GET", params: params, includeAuth: includeAuth
+        )
+        if envelope.success == false, let code = envelope.errorCode, code != 0 {
+            throw ServerError(code: code, message: envelope.errorMessage ?? "查询失败")
+        }
+        return envelope.data
+    }
+
     func postVoid(
         _ path: String,
         params: [String: String] = [:],
